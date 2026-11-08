@@ -124,7 +124,7 @@ const ageMonthsOn = (st, key) => diffDays(key, ageBaseKey(st)) / 30.4375;
 function blankState() {
   return {
     v: 1, profile: null, createdAt: todayKey(),
-    sleeps: [], marks: [], teeth: {}, foods: [], reasons: {}, skills: {}, ready: {},
+    sleeps: [], marks: [], teeth: {}, foods: [], reasons: {}, skills: {}, ready: {}, exlog: {},
   };
 }
 const Store = {

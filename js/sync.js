@@ -9,7 +9,7 @@ const SYNC_DIR = 'data';
 const SYNC_STORE = 'anyuta-radar-sync';
 const SYNC_EVERY = 15000;
 const SYNC_ARRAYS = ['sleeps', 'marks', 'foods'];
-const SYNC_MAPS = ['teeth', 'reasons', 'skills', 'ready'];
+const SYNC_MAPS = ['teeth', 'reasons', 'skills', 'ready', 'exlog'];
 const SYNC_PROFILE = ['name', 'birth', 'due', 'bedTarget'];
 
 function syncFlatten(st) {
@@ -44,7 +44,7 @@ function syncPartition(key, value) {
   const cut = key.indexOf('/'), c = key.slice(0, cut);
   if (c === 'sleeps') return keyOf(value.start).slice(0, 7);
   if (c === 'marks' || c === 'foods') return value.date.slice(0, 7);
-  if (c === 'reasons') return key.slice(cut + 1, cut + 8);
+  if (c === 'reasons' || c === 'exlog') return key.slice(cut + 1, cut + 8);
   return 'core';
 }
 /* Время для записей, сделанных до подключения. Профиль уступает данным семьи */
@@ -52,7 +52,7 @@ function syncNaturalTime(key, v) {
   const c = key.slice(0, key.indexOf('/'));
   if (c === 'sleeps') return v.end || v.start;
   if (c === 'marks' || c === 'foods') return parseKey(v.date);
-  if (c === 'reasons') return parseKey(key.slice(key.indexOf('/') + 1));
+  if (c === 'reasons' || c === 'exlog') return parseKey(key.slice(key.indexOf('/') + 1, key.indexOf('/') + 11));
   if (c === 'teeth' || c === 'skills') return parseKey(v);
   return 1;
 }

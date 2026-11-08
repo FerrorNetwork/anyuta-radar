@@ -176,7 +176,14 @@ function sleepNowView(st) {
     contextTags(st) + (sn.state === 'unknown' ? nextCard(st, sn) : '') +
     '<div><button class="big ' + (sleeping ? 'sun' : 'moon') + '" data-act="toggle"><span class="big-ic">' + (sleeping ? Art.sun() : Art.moon()) + '</span><span>' + (sleeping ? 'Проснулась' : 'Уснула') + '</span></button>' +
     '<div class="past" style="margin-top:14px"><span>' + (sleeping ? 'Проснулась' : 'Уснула') + ', минут назад:</span>' + [5, 10, 20].map(m => '<button class="pill-btn" data-act="toggle" data-a="' + m + '" aria-label="' + m + ' минут назад">' + m + '</button>').join('') + '</div></div>' +
-    (sn.state === 'unknown' ? '' : nextCard(st, sn)) + endOfDayCard(st, sn) + logCard(st, sn);
+    (sn.state === 'unknown' ? '' : nextCard(st, sn)) + exerciseNudge(st, sn) + endOfDayCard(st, sn) + logCard(st, sn);
+}
+/* Пока бодрствует и до сна ещё есть время, подсказываем упражнение */
+function exerciseNudge(st, sn) {
+  if (Store.demo || sn.state !== 'awake' || sn.overdue || sn.minsLeft < 20) return '';
+  const next = exercisePlan(st, todayKey()).find(e => !e.finished);
+  if (!next) return '';
+  return '<section class="card"><div class="rowline">' + ttl('ball', 'Пока бодрствует') + '</div><div class="ex-row"><button class="ex-open" data-act="exOpen" data-a="' + next.id + '"><span class="ex-thumb">' + Art.ex(next.anim, true) + '</span><span class="li-main"><span class="li-t">' + esc(next.title) + '</span><span class="li-s" style="display:block">' + esc(next.time) + '</span></span></button></div></section>';
 }
 
 /* Записи сна */
@@ -293,6 +300,9 @@ function sleepDayView(st) {
     html += '<section class="card">' + scoreHead(sc.score, sc.grade.tone, sc.grade.label, d.verdict, sc.partial ? 'Предварительно: итог появится после отбоя.' : '') +
       '<div class="parts">' + sc.parts.map(p => '<div><div class="part-top"><span>' + p.label + '</span><span>' + esc(p.note) + '</span></div><div class="bar"><i style="width:' + Math.round(p.f * 100) + '%"></i></div></div>').join('') + '</div></section>';
   }
+  if (!sc) {
+    html += '<section class="card"><div class="hero-art">' + Art.bunny('awake') + '<div><p class="h2">Для оценки пока мало записей</p><p class="small mute">Не хватает: ' + dayMissing(sum).join(', ') + '.</p></div></div></section>';
+  }
   if (sum.windows.length) {
     html += '<section class="card">' + ttl('clock', 'Окна бодрствования') + '<div class="list">' + sum.windows.map(w => {
       const [lo, hi] = sum.norm.ww, delta = w.suspect ? null : w.min > hi + 15 ? '+' + fmtDur(w.min - hi) : w.min < lo - 10 ? '−' + fmtDur(lo - w.min) : null;
@@ -352,7 +362,7 @@ function sleepWeekView(st) {
   const w = weekReport(st, idx, UI.week);
   let html = dateNav(fmtRange(UI.week, addDays(UI.week, 6)), 'weekNav', UI.week < current);
   html += '<section class="card">' + ttl('cal', 'Неделя по дням') + actogram(idx, w.days) + '<div class="legend"><span><i style="background:var(--grape)"></i>Ночь</span><span><i style="background:#ffc83d"></i>День</span><span>Справа оценка дня</span></div></section>';
-  if (w.empty) return html + '<section class="card"><div class="hero-art">' + Art.bunny('asleep') + '<div><p class="h2">Оценка появится после первого завершённого дня</p><p class="small mute">Для точной картины отмечайте и ночь, и дневные сны.</p></div></div></section>';
+  if (w.empty) return html + '<section class="card"><div class="hero-art">' + Art.bunny('asleep') + '<div><p class="h2">Оценка недели появится после ' + WEEK_MIN_DAYS + ' полных дней</p><p class="small mute">Уже есть: ' + w.scored.length + ' из ' + WEEK_MIN_DAYS + '. Полный день это отмеченные утренний подъём, дневные сны и отбой.</p></div></div></section>';
   const s = w.stats, stat = (v, label) => '<div class="stat"><b>' + v + '</b><span>' + label + '</span></div>';
   html += '<section class="card">' + scoreHead(w.score, w.grade.tone, w.grade.label, w.verdict, 'По ' + w.scored.length + ' ' + plural(w.scored.length, 'дню', 'дням', 'дням') + ' из 7') +
     '<div class="stats">' +

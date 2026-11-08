@@ -138,8 +138,18 @@ function bandScore(v, lo, hi, softLo, softHi) {
   return 1;
 }
 
+/* Чего не хватает, чтобы честно оценить день */
+function dayMissing(sum) {
+  const missing = [];
+  if (!sum.night) missing.push('утренний подъём');
+  if (sum.complete && !sum.bed) missing.push('отбой');
+  if (sum.windows.some(w => w.suspect)) missing.push('пропущенный дневной сон');
+  if (!sum.complete && sum.night && !sum.windows.length) missing.push('хотя бы один дневной сон');
+  return missing;
+}
+
 function scoreDay(st, sum) {
-  if (!sum.hasData) return null;
+  if (!sum.hasData || dayMissing(sum).length) return null;
   const { norm, complete } = sum, parts = [];
   const add = (id, label, max, f, note) => {
     const v = clamp(f, 0, 1);
@@ -287,7 +297,8 @@ function diagnose(st, idx, sum) {
   items.sort((a, b) => order[a.level] - order[b.level]);
   const main = items.find(i => i.level === 'warn');
   const verdict = !sum.hasData ? 'Записей за этот день нет.'
-    : !norm.schedule ? 'В этом возрасте графика ещё нет. Важнее накормить, дать поспать и следить за признаками усталости.'
+    : dayMissing(sum).length ? 'Записей пока мало для оценки.'
+      : !norm.schedule ? 'В этом возрасте графика ещё нет. Важнее накормить, дать поспать и следить за признаками усталости.'
       : main ? 'Главное за день: ' + main.title.charAt(0).toLowerCase() + main.title.slice(1) + '.'
         : 'День прошёл близко к возрастному графику.';
   return { verdict, items };
@@ -408,7 +419,8 @@ function sleepNow(st, t = now()) {
   };
 }
 
-/* Неделя: понедельник – воскресенье */
+/* Неделя: понедельник – воскресенье. Оцениваем, когда отмечено хотя бы три полных дня */
+const WEEK_MIN_DAYS = 3;
 function weekReport(st, idx, monday, t = now()) {
   const days = [];
   for (let i = 0; i < 7; i++) {
@@ -417,7 +429,7 @@ function weekReport(st, idx, monday, t = now()) {
     days.push({ key, sum, score: scoreDay(st, sum) });
   }
   const scored = days.filter(d => d.score && d.sum.complete);
-  if (!scored.length) return { days, scored, empty: true };
+  if (scored.length < WEEK_MIN_DAYS) return { days, scored, empty: true };
   const score = Math.round(avg(scored.map(d => d.score.score)));
   const of = f => { const v = days.map(f).filter(x => x != null); return v.length ? v : null; };
   const totals = of(d => d.sum.complete ? d.sum.totalMin : null);

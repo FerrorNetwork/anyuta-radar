@@ -3,7 +3,7 @@
 /* Общие детали интерфейса: шапка, меню, шторки, уведомления, обработка нажатий. */
 
 const $ = (s, r = document) => r.querySelector(s);
-const UI = { tab: 'sleep', sub: { sleep: 'now', cal: 'soon', feed: 'plan' }, dayKey: null, week: null, month: null, dailyKey: null, foodCat: 'all', sheetFn: null };
+const UI = { tab: 'sleep', sub: { sleep: 'now', cal: 'soon', feed: 'plan', day: 'today', fun: 'poems' }, dayKey: null, week: null, month: null, dailyKey: null, exKey: null, cpM: null, foodCat: 'all', poemKind: 'all', sheetFn: null };
 const Actions = {}, Forms = {};
 
 const ICONS = {
@@ -22,7 +22,7 @@ function seg(group, items) {
     '<button role="tab" aria-selected="' + (id === active) + '" class="' + (id === active ? 'on' : '') + '" data-act="sub" data-a="' + group + '" data-b="' + id + '">' + label + '</button>').join('') + '</div>';
 }
 function renderTabs() {
-  const tabs = [['sleep', 'Сон', 'moon'], ['cal', 'Календарь', 'hop'], ['feed', 'Прикорм', 'spoon'], ['day', 'Развитие', 'sprout']];
+  const tabs = [['sleep', 'Сон', 'moon'], ['cal', 'Календарь', 'hop'], ['feed', 'Прикорм', 'spoon'], ['day', 'Развитие', 'sprout'], ['fun', 'Забавы', 'note']];
   $('#tabs').innerHTML = '<div class="inner">' + tabs.map(([id, label, ic]) =>
     '<button data-act="tab" data-a="' + id + '" class="' + (UI.tab === id ? 'on' : '') + '"' + (UI.tab === id ? ' aria-current="page"' : '') + '><span class="tab-ic">' + Art.mini(ic) + '</span><span>' + label + '</span></button>').join('') + '</div>';
 }
@@ -124,7 +124,7 @@ function demoBlock() {
 function render() {
   const st = Store.state;
   document.body.dataset.tab = UI.tab;
-  const views = { sleep: viewSleep, cal: viewCalendar, feed: viewFeeding, day: viewDaily };
+  const views = { sleep: viewSleep, cal: viewCalendar, feed: viewFeeding, day: viewDaily, fun: viewFun };
   $('#view').innerHTML = header(st) + installBlock() + demoBlock() + partyBlock(st) + views[UI.tab](st);
   renderTabs();
   const hop = $('#hop-wrap');
