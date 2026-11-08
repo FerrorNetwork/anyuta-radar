@@ -1,25 +1,20 @@
 'use strict';
 
-/* Общие детали интерфейса: иконки, шторки, уведомления, обработка нажатий. */
+/* Общие детали интерфейса: шапка, меню, шторки, уведомления, обработка нажатий. */
 
 const $ = (s, r = document) => r.querySelector(s);
 const UI = { tab: 'sleep', sub: { sleep: 'now', cal: 'soon', feed: 'plan' }, dayKey: null, week: null, month: null, dailyKey: null, foodCat: 'all', sheetFn: null };
 const Actions = {}, Forms = {};
 
 const ICONS = {
-  moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>',
-  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.5 1.5M18.3 18.3l1.5 1.5M2.5 12h2M19.5 12h2M4.2 19.8l1.5-1.5M18.3 5.7l1.5-1.5"/>',
-  wave: '<path d="M2.5 12c2-7 4-7 6 0s4 7 6 0 4-7 6.5 0"/>',
-  spoon: '<ellipse cx="12" cy="7.5" rx="4" ry="5"/><path d="M12 12.5V22"/>',
-  sprout: '<path d="M12 21v-9M12 12c0-4-3-6.5-7.5-6.5C4.5 10 7.5 12 12 12ZM12 9.5c0-3 2.6-5 6.5-5 0 4-2.6 5-6.5 5Z"/>',
-  sliders: '<path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.6"/><circle cx="8" cy="17" r="2.6"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
   left: '<path d="M15 5l-7 7 7 7"/>',
   right: '<path d="M9 5l7 7-7 7"/>',
-  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
+  sliders: '<path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.6"/><circle cx="8" cy="17" r="2.6"/>',
 };
-const icon = (n, s = 22) => '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[n] + '</svg>';
+const icon = (n, s = 22) => '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[n] + '</svg>';
+const ttl = (ic, text) => '<p class="eyebrow">' + Art.mini(ic) + '<span>' + text + '</span></p>';
+const liIcon = (ic, cls) => '<span class="li-ic' + (cls ? ' ' + cls : '') + '">' + ic + '</span>';
 
 function seg(group, items) {
   const active = UI.sub[group];
@@ -27,16 +22,33 @@ function seg(group, items) {
     '<button role="tab" aria-selected="' + (id === active) + '" class="' + (id === active ? 'on' : '') + '" data-act="sub" data-a="' + group + '" data-b="' + id + '">' + label + '</button>').join('') + '</div>';
 }
 function renderTabs() {
-  const tabs = [['sleep', 'Сон', 'moon'], ['cal', 'Календарь', 'wave'], ['feed', 'Прикорм', 'spoon'], ['day', 'Развитие', 'sprout']];
+  const tabs = [['sleep', 'Сон', 'moon'], ['cal', 'Календарь', 'hop'], ['feed', 'Прикорм', 'spoon'], ['day', 'Развитие', 'sprout']];
   $('#tabs').innerHTML = '<div class="inner">' + tabs.map(([id, label, ic]) =>
-    '<button data-act="tab" data-a="' + id + '" class="' + (UI.tab === id ? 'on' : '') + '"' + (UI.tab === id ? ' aria-current="page"' : '') + '>' + icon(ic, 24) + '<span>' + label + '</span></button>').join('') + '</div>';
+    '<button data-act="tab" data-a="' + id + '" class="' + (UI.tab === id ? 'on' : '') + '"' + (UI.tab === id ? ' aria-current="page"' : '') + '><span class="tab-ic">' + Art.mini(ic) + '</span><span>' + label + '</span></button>').join('') + '</div>';
+}
+function greeting() {
+  const h = new Date(now()).getHours();
+  return h < 5 || h >= 23 ? 'Доброй ночи' : h < 12 ? 'Доброе утро' : h < 18 ? 'Добрый день' : 'Добрый вечер';
+}
+function syncBadgeInner() {
+  const s = Sync.status;
+  const name = s === 'busy' ? 'syncBusy' : s === 'ok' || s === 'idle' ? 'syncOk' : s === 'off' ? 'syncOff' : 'syncBad';
+  return Art.mini(s === 'offline' ? 'syncOff' : name);
+}
+function renderSyncBadge() {
+  const b = $('#sync-badge');
+  if (!b) return;
+  b.className = 'icon-btn sync-badge ' + Sync.status;
+  b.innerHTML = syncBadgeInner();
 }
 function header(st) {
   const a = calAge(st.profile.birth, todayKey());
   const corrected = ageBaseKey(st) !== st.profile.birth ? ' · скорр. ' + fmtAge(calAge(ageBaseKey(st), todayKey())) : '';
-  return '<header class="top"><div><h1 class="kid">' + esc(st.profile.name) + '</h1><p class="age">' + fmtAge(a) + corrected + '</p></div>' +
-    '<button class="icon-btn" data-act="settings" aria-label="Настройки">' + icon('sliders', 24) + '</button></header>';
+  const sync = Sync.available() ? '<button id="sync-badge" class="icon-btn sync-badge ' + Sync.status + '" data-act="settings" aria-label="Синхронизация">' + syncBadgeInner() + '</button>' : '';
+  return '<header class="top"><div class="avatar">' + Art.bunny('happy') + '</div><div class="top-main"><p class="hello">' + greeting() + '!</p><h1 class="kid">' + esc(st.profile.name) + '</h1><p class="age">' + fmtAge(a) + corrected + '</p></div>' +
+    '<div class="top-side">' + sync + '<button class="icon-btn" data-act="settings" aria-label="Настройки">' + icon('sliders', 22) + '</button></div></header>';
 }
+
 const isOwnSite = () => {
   const b = document.documentElement.dataset.build;
   return !!b && b !== 'dev' && window.top === window.self;
@@ -70,26 +82,59 @@ Actions.install = () => {
   ev.prompt();
   ev.userChoice.finally(() => { UI.installEvent = null; render(); });
 };
-function demoBlock() {
-  if (!Store.demo) return Store.canPersist ? '' : '<div class="banner">Браузер не даёт сохранять данные. Записи пропадут после закрытия.</div>';
-  if (UI.tab !== 'sleep' || UI.sub.sleep !== 'now') {
-    return '<div class="banner"><span>Сейчас показан пример</span><button class="pill-btn" data-act="goSetup">Указать дату</button></div>';
-  }
-  return '<section class="setup" id="setup"><p class="h">Укажите дату рождения, и радар настроится под неё</p>' +
-    '<p class="small">Ниже пример, как всё будет выглядеть. Настоящие записи появятся после настройки.</p>' +
-    '<form class="form" data-form="setup">' +
+
+/* Праздники: месяц жизни и сотый день */
+function partyBlock(st) {
+  if (Store.demo || (UI.tab !== 'day' && !(UI.tab === 'sleep' && UI.sub.sleep === 'now'))) return '';
+  const a = calAge(st.profile.birth, todayKey()), name = esc(st.profile.name);
+  let title = '';
+  if (a.total + 1 === 100) title = 'Сегодня сотый день!';
+  else if (a.months > 0 && a.days === 0) title = name + ': ' + (a.months < 12 ? a.months + ' ' + plural(a.months, 'месяц', 'месяца', 'месяцев') : Math.floor(a.months / 12) + ' ' + plural(Math.floor(a.months / 12), 'год', 'года', 'лет') + (a.months % 12 ? ' и ' + (a.months % 12) + ' мес' : '')) + '!';
+  if (!title) return '';
+  return '<section class="card party"><div class="hero-art">' + Art.balloons() + '<div><p class="h">' + title + '</p><p class="note-hand">Поздравляем маленькую именинницу и её родителей</p></div></div></section>';
+}
+
+function connectForm(ids) {
+  return '<form class="form" data-form="connect">' +
+    '<label class="field"><span>Код семьи</span><input type="password" name="token" id="' + ids + '-token" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>' +
+    '<label class="field"><span>Кто пользуется этим телефоном</span><select name="device" id="' + ids + '-device"><option>Мама</option><option>Папа</option><option>Бабушка</option><option>Дедушка</option><option>Няня</option></select></label>' +
+    '<p class="err" data-connect-err hidden></p>' +
+    '<button class="btn primary wide" type="submit">Подключить</button></form>';
+}
+function setupFields() {
+  return '<form class="form" data-form="setup">' +
     '<label class="field"><span>Имя</span><input type="text" name="name" id="setup-name" value="Анюта" maxlength="24" required></label>' +
     '<label class="field"><span>Дата рождения</span><input type="date" name="birth" id="setup-birth" max="' + todayKey() + '" required></label>' +
     '<details><summary>Родилась раньше или позже срока?</summary><label class="field" style="margin-top:8px"><span>Предполагаемая дата родов</span><input type="date" name="due" id="setup-due"></label></details>' +
     '<p class="err" id="setup-err" hidden></p>' +
-    '<button class="btn primary wide" type="submit">Начать</button></form></section>';
+    '<button class="btn primary wide" type="submit">Начать</button></form>';
+}
+function demoBlock() {
+  if (!Store.demo) return Store.canPersist ? '' : '<div class="banner">Браузер не даёт сохранять данные. Записи пропадут после закрытия.</div>';
+  if (UI.tab !== 'sleep' || UI.sub.sleep !== 'now') {
+    return '<div class="banner"><span>Сейчас показан пример</span><button class="pill-btn" data-act="goSetup">Настроить</button></div>';
+  }
+  if (Sync.available()) {
+    return '<section class="setup" id="setup"><div class="setup-head">' + Art.bunny('happy') + '<div><p class="h">Привет! Откроем дневник?</p><p class="small">Вставьте код семьи. Он нужен один раз на каждом телефоне.</p></div></div>' + connectForm('first') +
+      '<details><summary>Начать без синхронизации</summary><div style="margin-top:8px">' + setupFields() + '</div></details></section>';
+  }
+  return '<section class="setup" id="setup"><div class="setup-head">' + Art.bunny('happy') + '<div><p class="h">Укажите дату рождения</p><p class="small">Ниже пример, как всё будет выглядеть.</p></div></div>' + setupFields() + '</section>';
 }
 
 function render() {
   const st = Store.state;
+  document.body.dataset.tab = UI.tab;
   const views = { sleep: viewSleep, cal: viewCalendar, feed: viewFeeding, day: viewDaily };
-  $('#view').innerHTML = header(st) + installBlock() + demoBlock() + views[UI.tab](st);
+  $('#view').innerHTML = header(st) + installBlock() + demoBlock() + partyBlock(st) + views[UI.tab](st);
   renderTabs();
+  const hop = $('#hop-wrap');
+  if (hop) hop.scrollLeft = Number(hop.dataset.focus) - hop.clientWidth / 2;
+}
+/* Пришли записи с другого телефона */
+function refreshFromSync() {
+  const a = document.activeElement;
+  if (UI.sheetFn || (a && /INPUT|SELECT|TEXTAREA/.test(a.tagName))) return;
+  render();
 }
 
 /* Шторки */
@@ -132,6 +177,22 @@ const haptic = () => {
   try { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(12); }
   catch (e) { /* нет вибрации */ }
 };
+/* Брызги звёздочек от нажатия */
+function burst(el, count = 9) {
+  if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = el.getBoundingClientRect(), fx = $('#fx'), colors = ['#ffc83d', '#ff85b3', '#8c6cf0', '#3ccfa8', '#5bb8ff'];
+  for (let i = 0; i < count; i++) {
+    const s = document.createElement('span'), a = i / count * Math.PI * 2, d = 42 + Math.random() * 34;
+    s.className = 'spark';
+    s.innerHTML = Art.star(colors[i % colors.length]);
+    s.style.left = (r.left + r.width / 2) + 'px';
+    s.style.top = (r.top + r.height / 2) + 'px';
+    s.style.setProperty('--dx', Math.cos(a) * d + 'px');
+    s.style.setProperty('--dy', Math.sin(a) * d + 'px');
+    fx.appendChild(s);
+    setTimeout(() => s.remove(), 800);
+  }
+}
 
 /* Первое нажатие просит подтверждения, второе выполняет */
 function confirmTap(el, label) {
@@ -148,7 +209,7 @@ function needSetup() {
   UI.sub.sleep = 'now';
   render();
   window.scrollTo(0, 0);
-  toast('Это пример. Сначала укажите дату рождения');
+  toast('Это пример. Сначала подключите дневник');
 }
 /* Изменения в примере не сохраняются: проводим к настройке */
 function mutate(fn) {

@@ -1,8 +1,13 @@
 'use strict';
 
 /* Запуск и обновление показаний */
+Sync.load();
 Store.load();
 render();
+if (Sync.active()) {
+  Sync.startLoop();
+  Sync.run();
+}
 
 let lastDay = todayKey();
 function tick() {

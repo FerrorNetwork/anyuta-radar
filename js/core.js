@@ -152,9 +152,11 @@ const Store = {
   },
   update(fn) {
     if (this.demo) return false;
+    const before = Sync.active() ? syncSnapshot(this.state) : null;
     fn(this.state);
     this.rev++;
     this.save();
+    if (before) Sync.noteLocal(before);
     return true;
   },
   start(profile) {
@@ -163,14 +165,25 @@ const Store = {
     this.demo = false;
     this.rev++;
     this.save();
+    if (Sync.active()) Sync.noteLocal({});
   },
   replace(obj) {
+    const before = Sync.active() && !this.demo ? syncSnapshot(this.state) : {};
     this.state = Object.assign(blankState(), obj);
+    this.demo = false;
+    this.rev++;
+    this.save();
+    if (Sync.active()) Sync.noteLocal(before);
+  },
+  /* Состояние, собранное из записей семьи */
+  adopt(next) {
+    this.state = next;
     this.demo = false;
     this.rev++;
     this.save();
   },
   wipe() {
+    Sync.disconnect();
     try { localStorage.removeItem(this.key); } catch (e) { /* хранение недоступно, стирать нечего */ }
     this.state = makeDemoState();
     this.demo = true;
