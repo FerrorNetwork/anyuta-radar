@@ -1,0 +1,16 @@
+{
+  "name": "Анютин радар",
+  "short_name": "Радар",
+  "description": "Сон, скачки, зубы, прикорм и развитие ребёнка",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EEF1F8",
+  "theme_color": "#3B45A6",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
